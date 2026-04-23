@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -79,19 +82,47 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
                 ColorBox(color = Color.Blue)
             }
             Button (
+                modifier = Modifier.padding(top = 20.dp),
                 onClick = {}
             ) {
                 Text("Stop")
             }
 //            Need a checkbox that randomizes the color change
+            CheckBox(label = "Randomize?")
         }
     }
 }
 
+// ---------------------------------
+// COLOR BOX FUNCTION
 @Composable
 fun ColorBox(color: Color) {
     Box(
         modifier = Modifier.size(150.dp, 200.dp).background(color)
+    )
+}
+
+// ---------------------------------
+@Composable
+fun CheckBox(label: String){
+    var checked by remember { mutableStateOf(true) }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.toggleable(
+                value = checked, onValueChange = { checked = it }, role = Role.Checkbox)
+    ) {
+        Text(
+            "Randomize?",
+            color = Color.White
+        )
+        Checkbox(
+            checked = checked,
+            onCheckedChange = { checked = it }
+        )
+    }
+    Text(
+        if (checked) "Randomize?" else "Randomize?"
     )
 }
 
