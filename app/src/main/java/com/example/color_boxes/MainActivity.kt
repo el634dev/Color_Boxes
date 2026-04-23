@@ -26,9 +26,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +41,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.color_boxes.ui.theme.Color_BoxesTheme
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,7 +60,15 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ColorBoxScreen(modifier: Modifier = Modifier) {
-    var message by remember { mutableStateOf("") }
+    val coroutine = rememberCoroutineScope()
+    var job: Job? by remember { mutableStateOf(null) }
+    val count = remember { mutableIntStateOf(0) }
+
+    var job2: Job? by remember { mutableStateOf(null) }
+    var job3: Job? by remember { mutableStateOf(null) }
+    var isRunning by remember { mutableStateOf(false) }
+
+    var currentColor by remember { mutableStateOf(Color.Red) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -83,15 +97,30 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
             }
             Button (
                 modifier = Modifier.padding(top = 20.dp),
-                onClick = {}
+                onClick = {
+//                    Should change the color of the boxes
+                    if(isRunning) {
+                        job?.cancel()
+                    } else {
+                        job = coroutine.launch {
+                            while (true) {
+                                delay(timeMillis = count.toLong())
+                                count.intValue = (count.intValue + 1) % 4
+                                currentColor = Color.White
+                            }
+                        }
+                    }
+                }
             ) {
-                Text("Stop")
+                Text("Stop", fontSize = 15.sp)
             }
 //            Need a checkbox that randomizes the color change
             CheckBox(label = "Randomize?")
         }
     }
 }
+
+private fun MutableIntState.toLong(): Long {}
 
 // ---------------------------------
 // COLOR BOX FUNCTION
@@ -112,13 +141,14 @@ fun CheckBox(label: String){
         modifier = Modifier.toggleable(
                 value = checked, onValueChange = { checked = it }, role = Role.Checkbox)
     ) {
-        Text(
-            "Randomize?",
-            color = Color.White
-        )
         Checkbox(
             checked = checked,
             onCheckedChange = { checked = it }
+        )
+        Text(
+            "Randomize?",
+            color = Color.White,
+            fontSize = 18.sp
         )
     }
     Text(
