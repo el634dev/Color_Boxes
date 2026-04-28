@@ -66,6 +66,7 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
 
     var activeIndex by remember {mutableIntStateOf(-1)}
     var isRunning by remember { mutableStateOf(false) }
+    var isRandom by remember { mutableStateOf(false) }
 
 //    var currentColor by remember { mutableStateOf(Color.Red) }
     Scaffold(
@@ -91,15 +92,15 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 20.dp)
             ) {
-                ColorBox(color = Color.Green, isActive = activeIndex == 2)
-                ColorBox(color = Color.Blue, isActive = activeIndex == 3)
+                ColorBox(color = Color.Green, isActive = activeIndex == 3)
+                ColorBox(color = Color.Blue, isActive = activeIndex == 2)
             }
             Button (
                 modifier = Modifier.padding(top = 20.dp),
                 onClick = {
                     if (isRunning) {
                         job?.cancel()
-                        activeIndex = -1 // Reset
+                        activeIndex = -1
                         isRunning = false
                     } else {
                         isRunning = true
@@ -108,10 +109,15 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
                             while (true) {
                                 activeIndex = current
                                 delay(500)
-
                                 activeIndex = -1
                                 delay(200)
-                                current = (current + 1) % 4
+
+                                // 2. Toggle logic based on checkbox
+                                if (isRandom) {
+                                    current = (0..3).random()
+                                } else {
+                                    current = (current + 1) % 4
+                                }
                             }
                         }
                     }
@@ -123,7 +129,7 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
                 )
             }
 //            Need a checkbox that randomizes the color change
-            CheckBox(label = "Randomize?")
+            CheckBox(label = "Randomize?", isRandom, onToggle = { isRandom = it })
         }
     }
 }
@@ -139,32 +145,32 @@ fun ColorBox(color: Color, isActive: Boolean) {
 
 // ---------------------------------
 @Composable
-fun CheckBox(label: String){
-    var checked by remember { mutableStateOf(true) }
-
+fun CheckBox(label: String, isChecked: Boolean, onToggle: (Boolean) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.toggleable(
-                value = checked, onValueChange = { checked = it }, role = Role.Checkbox)
+        modifier = Modifier
+            .padding(top = 16.dp)
+            .toggleable(
+                value = isChecked,
+                onValueChange = { onToggle(it) },
+                role = Role.Checkbox
+            )
     ) {
         Checkbox(
-            checked = checked,
-            onCheckedChange = { checked = it }
+            checked = isChecked,
+            onCheckedChange = { onToggle(it) }
         )
         Text(
-            "Randomize?",
+            text = label,
             color = Color.White,
             fontSize = 18.sp
         )
     }
-    Text(
-        if (checked) "Randomize?" else "Randomize?"
-    )
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun ColorBoxesPreview() {
     Color_BoxesTheme {
         ColorBoxScreen()
     }
