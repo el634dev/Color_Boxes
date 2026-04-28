@@ -68,7 +68,7 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
     var job3: Job? by remember { mutableStateOf(null) }
     var isRunning by remember { mutableStateOf(false) }
 
-    var currentColor by remember { mutableStateOf(Color.Red) }
+//    var currentColor by remember { mutableStateOf(Color.Red) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -104,23 +104,23 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
                     } else {
                         job = coroutine.launch {
                             while (true) {
-                                delay(timeMillis = count.toLong())
+                                delay(timeMillis = count.intValue.toLong())
                                 count.intValue = (count.intValue + 1) % 4
-                                currentColor = Color.White
                             }
                         }
                     }
                 }
             ) {
-                Text("Stop", fontSize = 15.sp)
+                Text(
+                    text = if (isRunning) "Stop" else "Start",
+                    fontSize = 15.sp
+                )
             }
 //            Need a checkbox that randomizes the color change
             CheckBox(label = "Randomize?")
         }
     }
 }
-
-private fun MutableIntState.toLong(): Long {}
 
 // ---------------------------------
 // COLOR BOX FUNCTION
