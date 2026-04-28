@@ -64,8 +64,7 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
     var job: Job? by remember { mutableStateOf(null) }
     val count = remember { mutableIntStateOf(0) }
 
-    var job2: Job? by remember { mutableStateOf(null) }
-    var job3: Job? by remember { mutableStateOf(null) }
+    var activeIndex by remember {mutableIntStateOf(-1)}
     var isRunning by remember { mutableStateOf(false) }
 
 //    var currentColor by remember { mutableStateOf(Color.Red) }
@@ -84,28 +83,35 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 20.dp)
             ) {
-                ColorBox(color = Color.Red)
-                ColorBox(color = Color.Yellow)
+                ColorBox(color = Color.Red, isActive = activeIndex == 0)
+                ColorBox(color = Color.Yellow, isActive = activeIndex == 1)
             }
             // ----------------------------------------
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 20.dp)
             ) {
-                ColorBox(color = Color.Green)
-                ColorBox(color = Color.Blue)
+                ColorBox(color = Color.Green, isActive = activeIndex == 2)
+                ColorBox(color = Color.Blue, isActive = activeIndex == 3)
             }
             Button (
                 modifier = Modifier.padding(top = 20.dp),
                 onClick = {
-//                    Should change the color of the boxes
-                    if(isRunning) {
+                    if (isRunning) {
                         job?.cancel()
+                        activeIndex = -1 // Reset
+                        isRunning = false
                     } else {
+                        isRunning = true
                         job = coroutine.launch {
+                            var current = 0
                             while (true) {
-                                delay(timeMillis = count.intValue.toLong())
-                                count.intValue = (count.intValue + 1) % 4
+                                activeIndex = current
+                                delay(500)
+
+                                activeIndex = -1
+                                delay(200)
+                                current = (current + 1) % 4
                             }
                         }
                     }
@@ -125,9 +131,9 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
 // ---------------------------------
 // COLOR BOX FUNCTION
 @Composable
-fun ColorBox(color: Color) {
+fun ColorBox(color: Color, isActive: Boolean) {
     Box(
-        modifier = Modifier.size(150.dp, 200.dp).background(color)
+        modifier = Modifier.size(150.dp, 200.dp).background(if(isActive) Color.White else color)
     )
 }
 
