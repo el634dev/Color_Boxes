@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
@@ -59,14 +60,10 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ColorBoxScreen(modifier: Modifier = Modifier) {
+fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView = viewModel()) {
     val coroutine = rememberCoroutineScope()
     var job: Job? by remember { mutableStateOf(null) }
     val count = remember { mutableIntStateOf(0) }
-
-    var activeIndex by remember {mutableIntStateOf(-1)}
-    var isRunning by remember { mutableStateOf(false) }
-    var isRandom by remember { mutableStateOf(false) }
 
 //    var currentColor by remember { mutableStateOf(Color.Red) }
     Scaffold(
@@ -84,36 +81,36 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 20.dp)
             ) {
-                ColorBox(color = Color.Red, isActive = activeIndex == 0)
-                ColorBox(color = Color.Yellow, isActive = activeIndex == 1)
+                ColorBox(color = Color.Red, isActive = colorBoxesView.activeIndex == 0)
+                ColorBox(color = Color.Yellow, isActive = colorBoxesView.activeIndex == 1)
             }
             // ----------------------------------------
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 20.dp)
             ) {
-                ColorBox(color = Color.Green, isActive = activeIndex == 3)
-                ColorBox(color = Color.Blue, isActive = activeIndex == 2)
+                ColorBox(color = Color.Green, isActive = colorBoxesView.activeIndex == 3)
+                ColorBox(color = Color.Blue, isActive = colorBoxesView.activeIndex == 2)
             }
             Button (
                 modifier = Modifier.padding(top = 20.dp),
                 onClick = {
-                    if (isRunning) {
+                    if (colorBoxesView.isRunning) {
                         job?.cancel()
-                        activeIndex = -1
-                        isRunning = false
+                        colorBoxesView.activeIndex = -1
+                        colorBoxesView.isRunning = false
                     } else {
-                        isRunning = true
+                        colorBoxesView.isRunning = true
                         job = coroutine.launch {
                             var current = 0
                             while (true) {
-                                activeIndex = current
+                                colorBoxesView.activeIndex = current
                                 delay(500)
-                                activeIndex = -1
+                                colorBoxesView.activeIndex = -1
                                 delay(200)
 
                                 // 2. Toggle logic based on checkbox
-                                if (isRandom) {
+                                if (colorBoxesView.isRandom) {
                                     current = (0..3).random()
                                 } else {
                                     current = (current + 1) % 4
@@ -124,12 +121,12 @@ fun ColorBoxScreen(modifier: Modifier = Modifier) {
                 }
             ) {
                 Text(
-                    text = if (isRunning) "Stop" else "Start",
+                    text = if (colorBoxesView.isRunning) "Stop" else "Start",
                     fontSize = 15.sp
                 )
             }
 //            Need a checkbox that randomizes the color change
-            CheckBox(label = "Randomize?", isRandom, onToggle = { isRandom = it })
+            CheckBox(label = "Randomize?", colorBoxesView.isRandom, onToggle = { colorBoxesView.isRandom = it })
         }
     }
 }
@@ -168,10 +165,7 @@ fun CheckBox(label: String, isChecked: Boolean, onToggle: (Boolean) -> Unit) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ColorBoxesPreview() {
-    Color_BoxesTheme {
-        ColorBoxScreen()
-    }
-}
+//fun nextTitle(){
+//
+//
+//}
