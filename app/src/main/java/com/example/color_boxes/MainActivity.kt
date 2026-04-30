@@ -1,10 +1,12 @@
 package com.example.color_boxes
 
+import android.R
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,9 +44,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.color_boxes.ui.theme.Color_BoxesTheme
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.coroutines.coroutineContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,10 +66,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView = viewModel()) {
     val coroutine = rememberCoroutineScope()
-    var job: Job? by remember { mutableStateOf(null) }
-    val count = remember { mutableIntStateOf(0) }
 
-//    var currentColor by remember { mutableStateOf(Color.Red) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -77,6 +78,11 @@ fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.background(color = Color.Black).fillMaxSize().padding(innerPadding)
         ) {
+            Text(
+                text = colorBoxesView.message,
+                color = Color.White,
+                fontSize = 20.sp
+            )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 20.dp)
@@ -96,12 +102,12 @@ fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView
                 modifier = Modifier.padding(top = 20.dp),
                 onClick = {
                     if (colorBoxesView.isRunning) {
-                        job?.cancel()
+                        colorBoxesView.job?.cancel()
                         colorBoxesView.activeIndex = -1
                         colorBoxesView.isRunning = false
                     } else {
                         colorBoxesView.isRunning = true
-                        job = coroutine.launch {
+                        colorBoxesView.job = coroutine.launch {
                             var current = 0
                             while (true) {
                                 colorBoxesView.activeIndex = current
@@ -136,11 +142,14 @@ fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView
 @Composable
 fun ColorBox(color: Color, isActive: Boolean) {
     Box(
-        modifier = Modifier.size(150.dp, 200.dp).background(if(isActive) Color.White else color)
+        modifier = Modifier
+            .size(150.dp, 200.dp)
+            .background(if (isActive) Color.White else color)
     )
 }
 
 // ---------------------------------
+// CHECKBOX FUNCTION
 @Composable
 fun CheckBox(label: String, isChecked: Boolean, onToggle: (Boolean) -> Unit) {
     Row(
@@ -165,7 +174,43 @@ fun CheckBox(label: String, isChecked: Boolean, onToggle: (Boolean) -> Unit) {
     }
 }
 
-//fun nextTitle(){
-//
-//
-//}
+// ---------------------------------
+// NEXT TITLE FUNCTION
+fun nextRound(colorBoxesView: ColorBoxesView, coroutineScope: CoroutineScope){
+    colorBoxesView.userSequence = emptyList()
+    colorBoxesView.userSequence += colorBoxesView.sequence + (0..3).random()
+    colorBoxesView.isRunning = true
+
+    colorBoxesView.message = "Waiting.."
+    colorBoxesView.job = coroutineScope.launch {
+        delay(1000)
+        for(index in colorBoxesView.sequence){
+            colorBoxesView.activeIndex = index
+            delay(600)
+            colorBoxesView.activeIndex = -1
+
+            delay(200)
+        }
+        colorBoxesView.isRunning = false
+        colorBoxesView.message = "Your turn"
+    }
+}
+
+// ---------------------------------
+// START A NEW ROUND FUNCTION (starts a new round if the player wants to play again)
+fun startNewRound(coroutineScope: CoroutineScope, colorBoxesView: ColorBoxesView){
+    colorBoxesView.userSequence = emptyList()
+    nextRound(colorBoxesView, coroutineScope)
+}
+
+// ---------------------------------
+fun handleUserClick(index: Int, colorBoxesView: ColorBoxesView){
+    val currentStep = colorBoxesView.userSequence.size
+    if(index == colorBoxesView.sequence[currentStep]){
+        colorBoxesView.userSequence += index
+        colorBoxesView.message = "Correct"
+    } else {
+        colorBoxesView.message = "Try again"
+        colorBoxesView.sequence = emptyList()
+    }
+}
