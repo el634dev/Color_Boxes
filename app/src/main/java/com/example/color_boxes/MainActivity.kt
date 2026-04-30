@@ -76,27 +76,79 @@ fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView
     ) { innerPadding ->
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.background(color = Color.Black).fillMaxSize().padding(innerPadding)
+            modifier = Modifier
+                .background(color = Color.Black)
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            Text(
-                text = colorBoxesView.message,
-                color = Color.White,
-                fontSize = 20.sp
-            )
+            Column(
+
+            ) {
+                for(row in 0..1){
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(top = 20.dp)
+                    ) {
+                        for(col in 0..3){
+                            val index = row * 2 + col
+                            ColorBox(
+                                color = colorBoxesView.colorList[index],
+                                isActive = colorBoxesView.activeIndex == index,
+                                onClick = {
+                                    if(!colorBoxesView.isRunning && colorBoxesView.sequence.isNotEmpty()){
+                                        handleUserClick(index, colorBoxesView)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 20.dp)
             ) {
-                ColorBox(color = Color.Red, isActive = colorBoxesView.activeIndex == 0)
-                ColorBox(color = Color.Yellow, isActive = colorBoxesView.activeIndex == 1)
+                ColorBox(
+                    color = Color.Red,
+                    isActive = colorBoxesView.activeIndex == 0,
+                    onClick = {
+                        if (colorBoxesView.isRunning) {
+                            handleUserClick(0, colorBoxesView)
+                        }
+                    }
+                )
+                ColorBox(
+                    color = Color.Yellow,
+                    isActive = colorBoxesView.activeIndex == 1,
+                    onClick = {
+                        if (colorBoxesView.isRunning) {
+                            handleUserClick(1, colorBoxesView)
+                        }
+                    }
+                )
             }
             // ----------------------------------------
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 20.dp)
             ) {
-                ColorBox(color = Color.Green, isActive = colorBoxesView.activeIndex == 3)
-                ColorBox(color = Color.Blue, isActive = colorBoxesView.activeIndex == 2)
+                ColorBox(
+                    color = Color.Green,
+                    isActive = colorBoxesView.activeIndex == 3,
+                    onClick = {
+                        if (colorBoxesView.isRunning) {
+                            handleUserClick(3, colorBoxesView)
+                        }
+                    }
+                )
+                ColorBox(color = Color.Blue,
+                    isActive = colorBoxesView.activeIndex == 2,
+                    onClick = {
+                        if (colorBoxesView.isRunning) {
+                            handleUserClick(2, colorBoxesView)
+                        }
+                    }
+                )
             }
             Button (
                 modifier = Modifier.padding(top = 20.dp),
@@ -131,7 +183,19 @@ fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView
                     fontSize = 15.sp
                 )
             }
-//            Need a checkbox that randomizes the color change
+            // Start Game
+            Button(
+                onClick = {
+                    startGame(coroutine, colorBoxesView)
+                }
+            ){
+                Text(
+                    text = colorBoxesView.message,
+                    color = Color.White,
+                    fontSize = 20.sp
+                )
+            }
+            // --------------------------------------
             CheckBox(label = "Randomize?", colorBoxesView.isRandom, onToggle = { colorBoxesView.isRandom = it })
         }
     }
@@ -140,11 +204,12 @@ fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView
 // ---------------------------------
 // COLOR BOX FUNCTION
 @Composable
-fun ColorBox(color: Color, isActive: Boolean) {
+fun ColorBox(color: Color, isActive: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(150.dp, 200.dp)
             .background(if (isActive) Color.White else color)
+            .clickable{ onClick() }
     )
 }
 
@@ -175,7 +240,7 @@ fun CheckBox(label: String, isChecked: Boolean, onToggle: (Boolean) -> Unit) {
 }
 
 // ---------------------------------
-// NEXT TITLE FUNCTION
+// NEXT ROUND FUNCTION  (starts a new round if the player wants to play again)
 fun nextRound(colorBoxesView: ColorBoxesView, coroutineScope: CoroutineScope){
     colorBoxesView.userSequence = emptyList()
     colorBoxesView.userSequence += colorBoxesView.sequence + (0..3).random()
@@ -197,8 +262,8 @@ fun nextRound(colorBoxesView: ColorBoxesView, coroutineScope: CoroutineScope){
 }
 
 // ---------------------------------
-// START A NEW ROUND FUNCTION (starts a new round if the player wants to play again)
-fun startNewRound(coroutineScope: CoroutineScope, colorBoxesView: ColorBoxesView){
+// START GAME FUNCTION
+fun startGame(coroutineScope: CoroutineScope, colorBoxesView: ColorBoxesView){
     colorBoxesView.userSequence = emptyList()
     nextRound(colorBoxesView, coroutineScope)
 }

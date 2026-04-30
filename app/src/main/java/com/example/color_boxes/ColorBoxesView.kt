@@ -6,13 +6,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.Job
 
 class ColorBoxesView: ViewModel(){
     var job: Job? = null
     val count by mutableIntStateOf(0)
-    //    var currentColor by remember mutableStateOf(Color.Red)
+    val colorList = listOf(Color.Red, Color.Blue, Color.Green, Color.Yellow)
 
     var activeIndex by mutableIntStateOf(-1)
     var isRunning by mutableStateOf(false)
