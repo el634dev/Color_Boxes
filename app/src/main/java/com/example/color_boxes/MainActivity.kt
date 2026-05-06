@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.color_boxes.ui.theme.Color_BoxesTheme
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -66,6 +67,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView = viewModel()) {
     val coroutine = rememberCoroutineScope()
+    val coroutineScope = CoroutineScope(Dispatchers.Main)
+
+    val totalColors = colorBoxesView.colorList.size
+    val numRows = 2
+    val numCols = totalColors / numRows
 
     Scaffold(
         topBar = {
@@ -81,48 +87,26 @@ fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Column(
 
-            ) {
-                for(row in 0..1){
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.padding(top = 20.dp)
-                    ) {
-                        for(col in 0..3){
-                            val index = row * 2 + col
-                            ColorBox(
-                                color = colorBoxesView.colorList[index],
-                                isActive = colorBoxesView.activeIndex == index,
-                                onClick = {
-                                    if(!colorBoxesView.isRunning && colorBoxesView.sequence.isNotEmpty()){
-                                        handleUserClick(index, colorBoxesView)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(top = 20.dp)
             ) {
                 ColorBox(
                     color = Color.Red,
-                    isActive = colorBoxesView.activeIndex == 0,
+                    isActive = colorBoxesView.activeIndex.intValue == 0,
                     onClick = {
                         if (colorBoxesView.isRunning) {
-                            handleUserClick(0, colorBoxesView)
+                            handleUserClick(0, colorBoxesView, coroutine)
                         }
                     }
                 )
                 ColorBox(
                     color = Color.Yellow,
-                    isActive = colorBoxesView.activeIndex == 1,
+                    isActive = colorBoxesView.activeIndex.intValue == 1,
                     onClick = {
                         if (colorBoxesView.isRunning) {
-                            handleUserClick(1, colorBoxesView)
+                            handleUserClick(1, colorBoxesView, coroutine)
                         }
                     }
                 )
@@ -134,47 +118,34 @@ fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView
             ) {
                 ColorBox(
                     color = Color.Green,
-                    isActive = colorBoxesView.activeIndex == 3,
+                    isActive = colorBoxesView.activeIndex.intValue == 3,
                     onClick = {
                         if (colorBoxesView.isRunning) {
-                            handleUserClick(3, colorBoxesView)
+                            handleUserClick(3, colorBoxesView, coroutine)
                         }
                     }
                 )
                 ColorBox(color = Color.Blue,
-                    isActive = colorBoxesView.activeIndex == 2,
+                    isActive = colorBoxesView.activeIndex.intValue == 2,
                     onClick = {
                         if (colorBoxesView.isRunning) {
-                            handleUserClick(2, colorBoxesView)
+                            handleUserClick(2, colorBoxesView, coroutine)
                         }
                     }
                 )
             }
-            Button (
+            Button(
                 modifier = Modifier.padding(top = 20.dp),
                 onClick = {
+                    colorBoxesView.job?.cancel()
                     if (colorBoxesView.isRunning) {
-                        colorBoxesView.job?.cancel()
-                        colorBoxesView.activeIndex = -1
+                        // Stop game
                         colorBoxesView.isRunning = false
+                        colorBoxesView.activeIndex.intValue = -1
                     } else {
+                        // Start game
                         colorBoxesView.isRunning = true
-                        colorBoxesView.job = coroutine.launch {
-                            var current = 0
-                            while (true) {
-                                colorBoxesView.activeIndex = current
-                                delay(500)
-                                colorBoxesView.activeIndex = -1
-                                delay(200)
-
-                                // 2. Toggle logic based on checkbox
-                                if (colorBoxesView.isRandom) {
-                                    current = (0..3).random()
-                                } else {
-                                    current = (current + 1) % 4
-                                }
-                            }
-                        }
+                        startGame(coroutineScope, colorBoxesView)
                     }
                 }
             ) {
@@ -183,20 +154,21 @@ fun ColorBoxScreen(modifier: Modifier = Modifier, colorBoxesView: ColorBoxesView
                     fontSize = 15.sp
                 )
             }
-            // Start Game
-            Button(
-                onClick = {
-                    startGame(coroutine, colorBoxesView)
-                }
-            ){
-                Text(
-                    text = colorBoxesView.message,
-                    color = Color.White,
-                    fontSize = 20.sp
-                )
-            }
+
+            // Message display
+            Text(
+                text = colorBoxesView.message,
+                fontSize = 20.sp,
+                color = Color.White,
+                modifier = Modifier.padding(top = 20.dp)
+            )
+
             // --------------------------------------
-            CheckBox(label = "Randomize?", colorBoxesView.isRandom, onToggle = { colorBoxesView.isRandom = it })
+            CheckBox(
+                label = "Randomize?",
+                colorBoxesView.isRandom,
+                onToggle = { colorBoxesView.isRandom = it }
+            )
         }
     }
 }
@@ -241,41 +213,53 @@ fun CheckBox(label: String, isChecked: Boolean, onToggle: (Boolean) -> Unit) {
 
 // ---------------------------------
 // NEXT ROUND FUNCTION  (starts a new round if the player wants to play again)
-fun nextRound(colorBoxesView: ColorBoxesView, coroutineScope: CoroutineScope){
-    colorBoxesView.userSequence = emptyList()
-    colorBoxesView.userSequence += colorBoxesView.sequence + (0..3).random()
-    colorBoxesView.isRunning = true
+fun nextRound(colorBoxesView: ColorBoxesView, coroutineScope: CoroutineScope) {
+    val nextIndex = if (colorBoxesView.isRandom) (0..3).random() else (colorBoxesView.sequence.lastOrNull() ?: 0)
 
+    colorBoxesView.userSequence.clear()
+    colorBoxesView.sequence.add(nextIndex)
     colorBoxesView.message = "Waiting.."
+
     colorBoxesView.job = coroutineScope.launch {
         delay(1000)
-        for(index in colorBoxesView.sequence){
-            colorBoxesView.activeIndex = index
+        for (index in colorBoxesView.sequence) {
+            colorBoxesView.activeIndex.intValue = index
             delay(600)
-            colorBoxesView.activeIndex = -1
-
+            colorBoxesView.activeIndex.intValue = -1
             delay(200)
         }
-        colorBoxesView.isRunning = false
         colorBoxesView.message = "Your turn"
     }
 }
 
 // ---------------------------------
 // START GAME FUNCTION
-fun startGame(coroutineScope: CoroutineScope, colorBoxesView: ColorBoxesView){
-    colorBoxesView.userSequence = emptyList()
+fun startGame(coroutineScope: CoroutineScope, colorBoxesView: ColorBoxesView) {
+    colorBoxesView.sequence.clear()
+    colorBoxesView.userSequence.clear()
+
+    // Initialize with one random or fixed value
+    val newIndex = if (colorBoxesView.isRandom) (0..3).random() else 0
+    colorBoxesView.sequence.add(newIndex)
     nextRound(colorBoxesView, coroutineScope)
 }
 
 // ---------------------------------
-fun handleUserClick(index: Int, colorBoxesView: ColorBoxesView){
+fun handleUserClick(index: Int, colorBoxesView: ColorBoxesView, coroutineScope: CoroutineScope){
     val currentStep = colorBoxesView.userSequence.size
-    if(index == colorBoxesView.sequence[currentStep]){
-        colorBoxesView.userSequence += index
-        colorBoxesView.message = "Correct"
-    } else {
-        colorBoxesView.message = "Try again"
-        colorBoxesView.sequence = emptyList()
+
+    if (currentStep < colorBoxesView.sequence.size) {
+        if (index == colorBoxesView.sequence[currentStep]) {
+            colorBoxesView.userSequence.add(index)
+            colorBoxesView.message = "Correct"
+            if (colorBoxesView.userSequence.size == colorBoxesView.sequence.size) {
+                // Next round
+                nextRound(colorBoxesView, coroutineScope)
+            }
+        } else {
+            colorBoxesView.message = "Try again"
+            colorBoxesView.sequence.clear()
+            colorBoxesView.userSequence.clear()
+        }
     }
 }
